@@ -1,2 +1,2 @@
 # 16S
-Workflow para análise sequênciaamento de 16S
+Workflow para análise sequênciamento de 16S
