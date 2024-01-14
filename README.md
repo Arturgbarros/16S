@@ -1,2 +1,2 @@
-# 16S
-Workflow para análise sequênciamento de 16S
+# Workflow 16S por linha de comando
+
