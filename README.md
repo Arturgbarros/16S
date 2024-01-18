@@ -306,3 +306,182 @@ qiime tools export --input-path q2-picrust2_output/pathway_abundance.qza --outpu
 biom convert -i pathabun_exported/feature-table.biom -o pathabun_exported/feature-table.biom.tsv --to-tsv
 ```
 # Análises Funcionais no R 
+* Nessa etapa é onde ocorre a visualização de todos os dados processados e assim conseguir tirar conclusões sobre a questão funcional dos táxons analisados anteriormente
+### 1. Importação dos pacotes necessários para as análises 
+```R
+library(ExpDes.pt)
+library(tibble) 
+library(reshape2)
+library(ggplot2) 
+library(microeco)
+library(BiocManager)
+library(phyloseq)
+library(dplyr)
+library(tidyverse)
+library(magrittr)
+library(viridis)
+library(vegan)
+library(phyloseq)
+library(file2meco)
+library(compositions)
+```
+### 2. Seleção da pasta de trabalho
+```R
+setwd("C:/Users/artur/Documents/usp_projeto1/16s")
+```
+### 3. Importação e tratamento dos dados funcionais 
+```R
+kegggenes <- read.delim("~/usp_projeto1/16s/kegggenes.tsv")
+ko_table <- read.csv("~/usp_projeto1/16s/ko_table.tsv", sep="")
+colnames(kegggenes)[1] = 'KO'#mudar nome
+keggegenes_table = merge.data.frame(ko_table,kegggenes,all = TRUE)#juntar tabela
+keggegenes_table <- na.omit(keggegenes_table)#remover valores vazios
+keggegenes_table <- filter(keggegenes_table, LV1 != "09160 Human Diseases",
+                           LV1 != "09150 Organismal Systems")#retirar valores desnecessários para a análise
+write.table(keggegenes_table,file = 'kegg.picrust.tsv')#salvar arquivo
+#fazendo OTU_table
+otu_table= keggegenes_table [,-c(1:6)]#criando tabela de OTUs
+otu_table$OTU_ID <- paste("OTU_", 1:nrow(otu_table), sep = "")#criando coluna OTU_ID e numerando
+otu_table <- otu_table[c("OTU_ID", names(otu_table)[-which(names(otu_table) == "OTU_ID")])]#passando coluna para o inicio
+rownames(otu_table) <- NULL#removendo valores nulos
+otu_table <- column_to_rownames(otu_table, var = "OTU_ID")#tornanado OTU_ID linhas
+otu_table <- round(otu_table)
+#fazendo tax_table
+tax_table = keggegenes_table [,c(1:6)]
+tax_table$OTU_ID <- paste("OTU_", 1:nrow(tax_table), sep = "")#criando coluna OTU_ID e numerando
+tax_table <- tax_table[c("OTU_ID", names(tax_table)[-which(names(tax_table) == "OTU_ID")])]
+rownames(tax_table) <- NULL
+tax_table <- column_to_rownames(tax_table, var = "OTU_ID")
+#importando metadata
+sample_info_16S <- read_delim("mapfile16_2.txt")
+sample_info_16S <- column_to_rownames(sample_info_16S, var = "sample-id")
+sample_info_16S = rename(sample_info_16S, Group=Treat)
+#reeimportando dados
+otu_table <- as.matrix(otu_table)
+taxonomy_table <- as.matrix(tax_table)
+otu_table = otu_table(otu_table, taxa_are_rows = TRUE)
+taxonomy_table = tax_table(taxonomy_table)
+sample_info = sample_data(sample_info_16S)
+phylo <- phyloseq(otu_table, taxonomy_table, sample_info)
+dataset <- phyloseq2meco(phylo)
+```
+### 4. Plotagens gráficas
+* Não será explicada cada uma pois as plotagens são as mesmas da taxônomia, porém nesse caso analísa-se **abundância**, **diversidade** , **riqueza** , **LDA score** e **network** das funções dos táxons encontrados.
+* Porém as plotagens abaixo se tornam um pouco mais complexas devido a necessidade de mudança de legendas (rótulo e inclinação), cores, normalização do heatmap e ordenação das plotagens
+```R
+#Ordenando 
+dataset$sample_table$Group %<>% factor(., levels = c('Bulk','Control','Bac_barba','Bac_para','Pae_jami','Pae_poly','pool'))#deve ser executado antes das plotagens
+
+#Definindo cores fixas
+color_val = c("#080707",
+             "#59008a",
+             "#217bc9",
+             "#00a6bc",
+             "#60c99f",
+             "#77e723",
+             "#f6e300")#deve ser citado em plotagens que permitem mudança de cor 
+
+#Alterando nomes
+names = c('Bac_barba'='T1','Bac_para'='T2','Pae_poly'='T4','Pae_jami'='T3','pool'='SynCom')#deve ser citado em cada plotagem
+
+#virar 45°
+theme(axis.text.x = element_text(angle = 45, hjust = 1))#deve ser citado em cada plotagem
+```
+* PLotagens
+```R
+t1 <- trans_abund$new(dataset = dataset, taxrank = "LV3", ntaxa = 40)
+t1$plot_heatmap(facet = "Group", xtext_keep = FALSE, withmargin = FALSE)+scale_x_discrete(labels = names)
+
+t1 <- trans_abund$new(dataset = dataset, taxrank = "LV2", ntaxa = 15, groupmean = "Group")
+g1 <- t1$plot_bar(others_color = "grey70", legend_text_italic = FALSE, color_values = turbo(15))
+g1 + theme_classic() + theme(axis.title.y = element_text(size = 20))+theme(axis.text.x = element_text(angle = 45, hjust = 1))+scale_x_discrete(labels = names)
+
+t1 <- trans_alpha$new(dataset = dataset, group = "Group")
+head(t1$data_stat)
+t1$cal_diff(method = "KW")
+head(t1$res_diff)
+t1$cal_diff(method = "KW_dunn", KW_dunn_letter = FALSE)
+head(t1$res_diff)
+t1$cal_diff(method = "wilcox")
+head(t1$res_diff)
+t1$cal_diff(method = "t.test")
+head(t1$res_diff)
+t1$cal_diff(method = "anova")
+head(t1$res_diff)
+
+#análise de diversidade e riqueza por boxplot 
+t1$cal_diff(method = "anova") 
+t1 = t1$plot_alpha(measure = "Observed", y_increase = 0.3, color = color_val) + theme(axis.text.x = element_text(angle = 45, hjust = 1)+scale_x_discrete(labels = names))#gráfico de riqueza
+t1 + scale_x_discrete(labels=names)
+t1 <- trans_alpha$new(dataset = dataset, group = "Group")
+t1$cal_diff(method = "anova")
+t1 = t1$plot_alpha(measure = "Simpson", y_increase = 0.3, color = color_val)+ theme(axis.text.x = element_text(angle = 45, hjust = 1)+scale_x_discrete(labels=names))#gráfico de diversidade
+t1 + scale_x_discrete(labels=names)
+t1 <- trans_alpha$new(dataset = dataset, group = "Group")
+t1$cal_diff(method = "anova") 
+t1= t1$plot_alpha(measure = "InvSimpson", y_increase = 0.3, color = color_val)+ theme(axis.text.x = element_text(angle = 45, hjust = 1)+scale_x_discrete(labels=names))#gráfico de diversidade
+t1 + scale_x_discrete(labels=names)
+t1 <- trans_alpha$new(dataset = dataset, group = "Group")
+t1$cal_diff(method = "anova") 
+t1=t1$plot_alpha(measure = "Shannon", y_increase = 0.1, color = color_val)+ theme(axis.text.x = element_text(angle = 45, hjust = 1))+scale_x_discrete(labels=names)#gráfico de diversidade
+t1 + scale_x_discrete(labels=names)
+t1 <- trans_alpha$new(dataset = dataset, group = "Group")
+t1$cal_diff(method = "anova") 
+t1=t1$plot_alpha(measure = "Chao1", add_sig_text_size = 6, color = color_val)+ theme(axis.text.x = element_text(angle = 45, hjust = 1))+scale_x_discrete(labels=names)#gráfico de riqueza
+t1 + scale_x_discrete(labels=names)
+t1 <- trans_alpha$new(dataset = dataset, group = "Group")
+t1$cal_diff(method = "anova") 
+
+
+
+dataset$cal_betadiv()
+t1 <- trans_beta$new(dataset = dataset, group = "Group", measure = "bray")
+# PCoA, PCA and NMDS are available
+t1$cal_ordination(ordination = "PCoA")
+# t1$res_ordination is the ordination result list
+class(t1$res_ordination)
+pcoa <- t1$plot_ordination(plot_color = "Group", plot_shape = "Group",color = color_val, plot_type = c("point", "chull", "centroid"))#mais fácil de ver as diferenças
+pcoa + theme_bw()
+t1$cal_group_distance()
+t1$cal_manova(manova_all = TRUE)
+t1$res_manova
+t1$cal_manova(manova_all = FALSE)
+t1$res_manova
+```
+# Network
+* Nessa etapa é preparada e visualizada a network com o software **Gephi**
+#### 1. Instalação do software
+```python
+https://gephi.org/
+```
+#### 2. **Abre** o arquivo gerado pela as análises do R
+![image](https://github.com/Tutugb/16S/assets/125391314/0111fee3-dd6b-402e-96eb-2b4c810d84fb)
+#### 3. **Escolher** o tipo de distribuição dos dados e **executar** 
+![image](https://github.com/Tutugb/16S/assets/125391314/1b412687-ad39-4701-a03f-32330928ad12)
+#### 4. Reduzir a largura das arestas
+![image](https://github.com/Tutugb/16S/assets/125391314/a1bd7a18-fe84-44b0-91ec-f4854ffd6b3a)
+#### 5. Alterar aparência dos nós referente a abundância relativa
+![image](https://github.com/Tutugb/16S/assets/125391314/3a2627ce-5a2d-4e83-bef4-f766cd37cba4)
+#### 6. Escolha da palheta dos nós referente a abundância relativa
+![image](https://github.com/Tutugb/16S/assets/125391314/fccba525-ef12-4201-9abe-341b74460810)
+#### OBS: caso a visualização das arestas esteja bom, não precisa aplicar filtro, pular ao passo
+#### 7. Excluindo arestas em excesso
+###### 7.1. No laborátório de dados organizar dados de forma crescente pela coluna **Weigth**
+![image](https://github.com/Tutugb/16S/assets/125391314/58aa6b01-c665-4529-95a0-ccf4ed55528d)
+###### 7.2. Excluir colunas conforme um filtro pessoal estabelecido
+###### 7.3. Colorir linhas da coluna label classificadas como "+" de cinza e linhas classificadas como "-" de vermelho
+![image](https://github.com/Tutugb/16S/assets/125391314/b76a0ea6-26b5-4d34-91a4-c7af558f3b23)
+#### 8. Exeutar parãmetros estatítisticos
+![image](https://github.com/Tutugb/16S/assets/125391314/70d31ff5-51f4-4cbd-b6cc-273e0c9594be)
+#### 9. Arrumar a visualização dos dados 
+
+**OBS:** Parâmetros pessoais
+
+![image](https://github.com/Tutugb/16S/assets/125391314/c321ca9c-249b-4275-87a4-94bacebf6b67)
+#### 10. Salvar o network
+**OBS:** Salvar com "salvar como" para assim criar outro arquivo com a indentificação da network modificada
+![image](https://github.com/Tutugb/16S/assets/125391314/32c86ba9-eaa9-492f-9373-bb535f4dc4d8)
+
+
+
+
