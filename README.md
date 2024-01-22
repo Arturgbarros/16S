@@ -286,20 +286,20 @@ t1$cal_module(method = "cluster_fast_greedy")
 t1$save_network(filepath = "pool.gexf") 
 ```
 # Extraindo função dos táxons determinados com Picrust2 e qiime2
-*Ativando ambiente de instalação 
+* Ativando ambiente de instalação 
 ```bash
 conda activate qiime2
 ```
 
-*Instalação do **picrust2**
+* Instalação do **picrust2**
 ```bash
 conda install -c bioconda picrust2
 ```
-*Executando o programa
+* Executando o programa
 ```bash
 qiime picrust2 full-pipeline --i-table table.qza --i-seq rep-seqs.qza --p-threads 16 --output-dir picrust2
 ```
-*converção das tabelas 
+* Converção das tabelas 
 ```bash
 qiime feature-table summarize --i-table q2-picrust2_output/pathway_abundance.qza --o-visualization q2-picrust2_output/pathway_abundance.qzv
 qiime tools export --input-path q2-picrust2_output/pathway_abundance.qza --output-path pathabun_exported
@@ -387,7 +387,7 @@ names = c('Bac_barba'='T1','Bac_para'='T2','Pae_poly'='T4','Pae_jami'='T3','pool
 #virar 45°
 theme(axis.text.x = element_text(angle = 45, hjust = 1))#deve ser citado em cada plotagem
 ```
-* PLotagens
+* Plotagens
 ```R
 t1 <- trans_abund$new(dataset = dataset, taxrank = "LV3", ntaxa = 40)
 t1$plot_heatmap(facet = "Group", xtext_keep = FALSE, withmargin = FALSE)+scale_x_discrete(labels = names)
