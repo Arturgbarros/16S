@@ -1,6 +1,6 @@
 # Workflow 16S por linha de comando
-#### sumário
-# 0. Baixando arquivos 
+
+# Baixando arquivos 
 * Copiar os arquivos do sequênciamento 16S (HTTPS)
 ```bash
 git clone https://github.com/Tutugb/16S.git
@@ -9,14 +9,14 @@ git clone https://github.com/Tutugb/16S.git
 ```bash
 git clone git@github.com:Tutugb/16S.git
 ```
-# 1. Criação das pastas
+# Criação das pastas
 Deixa o workflow é uma das partes mais importantes, pois é com essa organização que não haverá confusão em quais arquivos são os certos em cada etapa por isso é essencial a criação de uma pasta para o armazenamento de cada grupo de arquivos
 * Criação de pastas iniciais
 ```bash
 mkdir 16S 16S/00.dadosbrutos 16S/01.qualidade 16S/02.trimmagem 16S/02.trimmagem/00.qualidade 16S/merge 16S/qiime
 ```
 Os arquivos iniciais devem ser inseridos na pasta 00.dadosbrutos
-# 2. Controle de qualidade
+# Controle de qualidade
 Primeiramente usa-se o programa **fastqc** como forma de avaliar a qualidade do sequênciamento das amostras onde le os arquivos "fastq" ou "fq" e os converte para uma forma gráfica para melhor interpretação
 * Criação do ambiente para análise
 ```bash
@@ -43,7 +43,7 @@ fastqc genoma1_1.fq -t 26 -o ../01.qualidade/
 for i in {1..28}; do fastqc genoma${i}_1* genoma${i}_2* -o ../01.qualidade/ -t 26 ; done
 ```
 Após a obtenção de todos os arquivos .zip e .html é possível abrir cada um dos 28 arquivos .html e avaliar a qualidade de cada um, porém como isso é um trabalho muito exaustivo e repetitivo, usa-se a ferramenta abaixo para otimmização
-## 2.1. Junção dos arquivos do controle de qualidade
+## Junção dos arquivos do controle de qualidade
 Uma forma de juntar todos os arquivos resultantes do processo do fastqc é através do programa **multiqc** o qual junta todos os arquivos ".html" em um só mostrando todas as análises do fastqc de forma rezumida
 *Instalando **multiqc**
 pode instalar no ambiente "qualidade"
@@ -56,7 +56,7 @@ multiqc 01.qualidade/
 ```
 Assim tendo o arquivo "multiqc_data.html" só abrí-lo e avaliar qual onde deve ser feita a trimmagem e quais parâmetros usar para essa e se deve ser ou não retirado adaptadores utilizados no sequênciamento
 
-# 3. Trimmagem
+# Trimmagem
 Após avaliação dos parâmetros os quais são necessários serem retirados das sequências é realizada a trimmagem um processo que se consiste em retirar partes das sequências que estejam com a qualidade ruim ou de adapatadores os quais não são necessários para as análises futuras e podem até atrapalhar e para isso usa-se o programa **trimmomatic** e **trim_galore**
 * Criação do ambiente para análise
 ```bash
@@ -76,7 +76,7 @@ conda install -c bioconda trim-galore
 ```
 # Análises Taxonômicas no R 
 * Nessa etapa é onde ocorre a visualização de todos os dados processados e assim conseguir tirar conclusões sobre a questão taxônomica
-### 1. Importação dos pacotes necessários para as análises aqui relatadas
+### Importação dos pacotes necessários para as análises aqui relatadas
 ```R
 library(ExpDes.pt)
 library(tibble) 
@@ -94,11 +94,11 @@ library(phyloseq)
 library(file2meco)
 library(compositions)
 ```
-### 2. Definição de onde serão extraídos os dados
+### Definição de onde serão extraídos os dados
 ```R
 setwd("C:/Users/artur/Documents/usp_projeto1/16s")
 ```
-### 3. Importação e modificação dos dataframes gerados das análises por linha de comando
+### Importação e modificação dos dataframes gerados das análises por linha de comando
 ```R
 otu_table_16S <- read.delim("otu16_table.csv", row.names = 1)
 taxonomy_table_16S <- read.delim("tax16_table.csv", row.names = 1)
@@ -113,9 +113,9 @@ sample_info = sample_data(sample_info_16S)
 phylo <- phyloseq(otu_table, taxonomy_table, sample_info)
 dataset <- phyloseq2meco(phylo)
 ```
-### 4. Gráficos referentes a abundância 
+### Gráficos referentes a abundância 
 **OBS:** Os gráficos aqui presentes são os que mais se usam nos artigos científicos, mas o pacote tem inúmeros de gráficos distintos, isso é uma escolha muito pessoal
-#### 4.1. Análises de abundância
+#### Análises de abundância
 **Explicação:** As análise de abundância visam verificar qual organismos estão mais presentes nos tratamentos usados e analisar o quanto essa muda de tratamento para tratamento
 * Abundância relativa de filo em gráfico de barra
 ```R
@@ -132,7 +132,7 @@ t1$plot_heatmap(facet = "Group", xtext_keep = FALSE, withmargin = FALSE)
 ```
 ![image](https://github.com/Tutugb/16S/assets/125391314/97710733-b4c9-44b9-a211-5f5b8007bd43)
 
-#### 4.1. Análises de diversidade e riqueza
+#### Análises de diversidade e riqueza
 **Explicação riqueza:** Análises de diversidade visam analisar qual dos tratamentos tem um número maior de diferentes, porém é uma análise onde apenas a quantidade de organismos distintos importa
 
 **Explicação diversidade:** Análises de diversidade visam analisar o quão bem distribuida está a riqueza 
@@ -307,7 +307,7 @@ biom convert -i pathabun_exported/feature-table.biom -o pathabun_exported/featur
 ```
 # Análises Funcionais no R 
 * Nessa etapa é onde ocorre a visualização de todos os dados processados e assim conseguir tirar conclusões sobre a questão funcional dos táxons analisados anteriormente
-### 1. Importação dos pacotes necessários para as análises 
+### Importação dos pacotes necessários para as análises 
 ```R
 library(ExpDes.pt)
 library(tibble) 
@@ -325,11 +325,11 @@ library(phyloseq)
 library(file2meco)
 library(compositions)
 ```
-### 2. Seleção da pasta de trabalho
+### Seleção da pasta de trabalho
 ```R
 setwd("C:/Users/artur/Documents/usp_projeto1/16s")
 ```
-### 3. Importação e tratamento dos dados funcionais 
+### Importação e tratamento dos dados funcionais 
 ```R
 kegggenes <- read.delim("~/usp_projeto1/16s/kegggenes.tsv")
 ko_table <- read.csv("~/usp_projeto1/16s/ko_table.tsv", sep="")
@@ -365,7 +365,7 @@ sample_info = sample_data(sample_info_16S)
 phylo <- phyloseq(otu_table, taxonomy_table, sample_info)
 dataset <- phyloseq2meco(phylo)
 ```
-### 4. Plotagens gráficas
+### Plotagens gráficas
 * Não será explicada cada uma pois as plotagens são as mesmas da taxônomia, porém nesse caso analísa-se **abundância**, **diversidade** , **riqueza** , **LDA score** e **network** das funções dos táxons encontrados.
 * Porém as plotagens abaixo se tornam um pouco mais complexas devido a necessidade de mudança de legendas (rótulo e inclinação), cores, normalização do heatmap e ordenação das plotagens
 ```R
@@ -450,35 +450,35 @@ t1$res_manova
 ```
 # Network
 * Nessa etapa é preparada e visualizada a network com o software **Gephi**
-#### 1. Instalação do software
+#### Instalação do software
 ```python
 https://gephi.org/
 ```
-#### 2. **Abre** o arquivo gerado pela as análises do R
+#### **Abre** o arquivo gerado pela as análises do R
 ![image](https://github.com/Tutugb/16S/assets/125391314/0111fee3-dd6b-402e-96eb-2b4c810d84fb)
-#### 3. **Escolher** o tipo de distribuição dos dados e **executar** 
+#### **Escolher** o tipo de distribuição dos dados e **executar** 
 ![image](https://github.com/Tutugb/16S/assets/125391314/1b412687-ad39-4701-a03f-32330928ad12)
-#### 4. Reduzir a largura das arestas
+#### Reduzir a largura das arestas
 ![image](https://github.com/Tutugb/16S/assets/125391314/a1bd7a18-fe84-44b0-91ec-f4854ffd6b3a)
-#### 5. Alterar aparência dos nós referente a abundância relativa
+#### Alterar aparência dos nós referente a abundância relativa
 ![image](https://github.com/Tutugb/16S/assets/125391314/3a2627ce-5a2d-4e83-bef4-f766cd37cba4)
-#### 6. Escolha da palheta dos nós referente a abundância relativa
+#### Escolha da palheta dos nós referente a abundância relativa
 ![image](https://github.com/Tutugb/16S/assets/125391314/fccba525-ef12-4201-9abe-341b74460810)
 #### OBS: caso a visualização das arestas esteja bom, não precisa aplicar filtro, pular ao passo
-#### 7. Excluindo arestas em excesso
-###### 7.1. No laborátório de dados organizar dados de forma crescente pela coluna **Weigth**
+#### Excluindo arestas em excesso
+###### No laborátório de dados organizar dados de forma crescente pela coluna **Weigth**
 ![image](https://github.com/Tutugb/16S/assets/125391314/58aa6b01-c665-4529-95a0-ccf4ed55528d)
-###### 7.2. Excluir colunas conforme um filtro pessoal estabelecido
-###### 7.3. Colorir linhas da coluna label classificadas como "+" de cinza e linhas classificadas como "-" de vermelho
+###### Excluir linhas conforme um filtro pessoal estabelecido
+###### Colorir linhas da coluna label classificadas como "+" de cinza e linhas classificadas como "-" de vermelho
 ![image](https://github.com/Tutugb/16S/assets/125391314/b76a0ea6-26b5-4d34-91a4-c7af558f3b23)
-#### 8. Exeutar parãmetros estatítisticos
+#### Exeutar parãmetros estatítisticos
 ![image](https://github.com/Tutugb/16S/assets/125391314/70d31ff5-51f4-4cbd-b6cc-273e0c9594be)
-#### 9. Arrumar a visualização dos dados 
+#### Arrumar a visualização dos dados 
 
 **OBS:** Parâmetros pessoais
 
 ![image](https://github.com/Tutugb/16S/assets/125391314/c321ca9c-249b-4275-87a4-94bacebf6b67)
-#### 10. Salvar o network
+#### Salvar o network
 **OBS:** Salvar com "salvar como" para assim criar outro arquivo com a indentificação da network modificada
 ![image](https://github.com/Tutugb/16S/assets/125391314/32c86ba9-eaa9-492f-9373-bb535f4dc4d8)
 
