@@ -74,6 +74,83 @@ conda install -c bioconda trimmomatic
 ```bash
 conda install -c bioconda trim-galore
 ```
+* Aplicando trim_galore
+  utilizado para retirar os adaptadores das sequências
+```bash
+  for i in {1..28}; do trim_galore --paired -o trimmagem/trimgalore dadosbrutos/genoma${i}_1* dadosbrutos/genoma${i}_2*; done
+```
+# Merge
+*instalando **pear**
+```bash
+conda install -c bioconda pear
+```
+* Executando pear
+```bash
+for i in {1..28}; do pear -f dadosbrutos/genoma${i}_1* -r dadosbrutos/genoma${i}_2* -o merge/B${i} -j 20; done
+```
+# Qiime
+* instalando qiime
+  
+[Tutorial](https://github.com/qiime2/qiime2)
+* Executando qiime
+```bash
+export TMPDIR=/home/nanopore/Desktop/Artur_Barros/Amplicon/16S/Rawdata/merge
+tmp=$(mktemp -d --tmpdir)
+export TMPDIR=$tmp
+
+qiime tools import --type 'SampleData[SequencesWithQuality]' --input-path mapfile_qiime2.csv --input-format SingleEndFastqManifestPhred33V2 --output-path demux.qza
+
+qiime demux summarize --i-data single-end-demux.qza --o-visualization demux.qzv
+
+qiime dada2 denoise-single --i-demultiplexed-seqs demux.qza --p-trim-left 25 --p-trunc-len 325 --o-representative-sequences rep-seqs-dada2.qza --o-table table-dada2.qza --o-denoising-stats stats-dada2.qza
+
+qiime dada2 denoise-single --i-demultiplexed-seqs demux.qza --p-trim-left 20 --p-trunc-len 300 --o-representative-sequences rep-seqs-dada2.qza --o-table table-dada2.qza --o-denoising-stats stats-dada2.qza
+
+qiime metadata tabulate --m-input-file stats-dada2.qza --o-visualization stats-dada2.qzv
+
+mv rep-seqs-dada2.qza rep-seqs.qza
+
+mv table-dada2.qza table.qza
+
+qiime feature-table summarize --i-table table.qza --m-sample-metadata-file mapfile_2.txt --o-visualization table.qzv
+
+qiime feature-table tabulate-seqs --i-data rep-seqs.qza --o-visualization rep-seqs.qzv
+
+qiime alignment mafft --i-sequences rep-seqs.qza --o-alignment aligned-rep-seqs.qza
+
+qiime alignment mask --i-alignment aligned-rep-seqs.qza --o-masked-alignment masked-aligned-rep-seqs.qza
+
+qiime phylogeny fasttree --i-alignment masked-aligned-rep-seqs.qza --o-tree unrooted-tree.qza
+
+qiime phylogeny midpoint-root --i-tree unrooted-tree.qza --o-rooted-tree rooted-tree.qza
+
+qiime diversity core-metrics-phylogenetic --i-phylogeny rooted-tree.qza --i-table table.qza --p-sampling-depth 98470 --m-metadata-file mapfile_2.txt --output-dir core-metrics-results
+
+qiime diversity beta-group-significance --i-distance-matrix core-metrics-results/unweighted_unifrac_distance_matrix.qza --m-metadata-file mapfile_2.txt --m-metadata-column Treat --o-visualization core-metrics-results/unweighted-unifrac-Treat-significance.qzv --p-pairwise
+
+qiime diversity alpha-rarefaction --i-table table.qza --i-phylogeny rooted-tree.qza --p-max-depth 98470 --m-metadata-file mapfile_2.txt --o-visualization alpha-rarefaction.qzv
+
+qiime feature-table rarefy --i-table table.qza --p-sampling-depth 98470 --o-rarefied-table rarefied_table.qza
+
+qiime feature-table filter-features --i-table rarefied_table.qza --p-min-frequency 3 --o-filtered-table rarefied_filtered_table.qza
+
+qiime feature-classifier classify-sklearn --i-classifier classifier-bac-trainning.qza --i-reads rep-seqs.qza --o-classification taxonomy132_97.qza
+
+qiime metadata tabulate --m-input-file taxonomy132_97.qza --o-visualization taxonomy132_97.qzv
+
+qiime taxa barplot --i-table rarefied_filtered_table.qza --i-taxonomy taxonomy132_97.qza --m-metadata-file mapfile_2.txt --o-visualization taxa-bar-rare-nondoublt.qzv
+
+qiime tools export --input-path rarefied_filtered_table.qza --output-path exported_rarefied
+
+qiime tools export --input-path taxonomy132_97.qza --output-path exported_rarefied
+```
+
+* Alterar na tabela taxonomy.tsv Feature ID por #OTUID,Taxon por taxonomy,Confidence por confidence
+```bash
+biom add-metadata -i exported_rarefied/feature-table.biom -o table-with-taxonomy.biom --observation-metadata-fp exported_rarefied/taxonomy.tsv --sc-separated taxonomy
+
+biom convert -i table-with-taxonomy.biom -o table-with-taxonomy.txt --to-tsv --header-key taxonomy
+```
 # Análises Taxonômicas no R 
 * Nessa etapa é onde ocorre a visualização de todos os dados processados e assim conseguir tirar conclusões sobre a questão taxônomica
 ### Importação dos pacotes necessários para as análises aqui relatadas
@@ -123,14 +200,16 @@ t1 <- trans_abund$new(dataset = dataset, taxrank = "Phylum", ntaxa = 8, groupmea
 g1 <- t1$plot_bar(others_color = "grey70", legend_text_italic = FALSE)
 g1 + theme_classic() + theme(axis.title.y = element_text(size = 20))
 ```
-![image](https://github.com/Tutugb/16S/assets/125391314/9dd3fd78-e8ed-42db-a26b-1346db9711c6)
+![image](https://github.com/Arturgbarros/16S/assets/125391314/961a14b0-d458-43be-afbe-1e3ce84dce9f)
+
 
 *  Abundância relativa de gênero em gráfico de heatmap
 ```R
 t1 <- trans_abund$new(dataset = dataset, taxrank = "Genus", ntaxa = 40)
 t1$plot_heatmap(facet = "Group", xtext_keep = FALSE, withmargin = FALSE)
 ```
-![image](https://github.com/Tutugb/16S/assets/125391314/97710733-b4c9-44b9-a211-5f5b8007bd43)
+![image](https://github.com/Arturgbarros/16S/assets/125391314/5dc9ab44-3032-4280-ab48-53041df8034c)
+
 
 #### Análises de diversidade e riqueza
 **Explicação riqueza:** Análises de diversidade visam analisar qual dos tratamentos tem um número maior de diferentes, porém é uma análise onde apenas a quantidade de organismos distintos importa
@@ -149,10 +228,13 @@ t1$plot_alpha(measure = "Chao1", y_increase = 0.3)#gráfico de riqueza
 t1$plot_alpha(measure = "Shannon", y_increase = 0.1)#gráfico de diversidade
 t1$plot_alpha(measure = "Simpson", y_increase = 0.3)#gráfico de diversidade
 ```
-![image](https://github.com/Tutugb/16S/assets/125391314/9e1da583-7756-4a23-b5d0-6bfd853b6d7e)
-![image](https://github.com/Tutugb/16S/assets/125391314/1dcf9fdc-c014-4bdf-8bcb-1f17a677669d)
-![image](https://github.com/Tutugb/16S/assets/125391314/4979b437-ebd2-4708-9cea-325d370235b7)
-![image](https://github.com/Tutugb/16S/assets/125391314/40f93336-4c07-4676-acd7-561b6e63b170)
+![image](https://github.com/Arturgbarros/16S/assets/125391314/7c7b45d8-0339-49d0-937c-530d5cb7e1c1)
+
+![image](https://github.com/Arturgbarros/16S/assets/125391314/7fdccd52-6710-4547-ae7c-742497e2029f)
+
+![image](https://github.com/Arturgbarros/16S/assets/125391314/9205c893-8c6c-4743-8a40-61c68cbf4a91)
+
+![image](https://github.com/Arturgbarros/16S/assets/125391314/ebd7e66e-8f02-48c1-a23e-683de2c4864e)
 
 * PCoa análise de intersecção de organismos presentes nos tratamentos
 ```R
@@ -160,11 +242,12 @@ dataset$cal_betadiv()#útil para cálculo
 t1 <- trans_beta$new(dataset = dataset, group = "Group", measure = "bray")
 t1$cal_ordination(ordination = "PCoA")
 class(t1$res_ordination)
-t1$plot_ordination(plot_color = "Group", plot_shape = "Group", plot_type = c("point", "chull"))
+pcoa <- t1$plot_ordination(plot_color = "Group", plot_shape = "Group", plot_type = c("point", "chull"))#mais fácil de ver as diferenças
+pcoa + theme_bw()
 t1$cal_manova(manova_all = FALSE)
 t1$res_manova #resultado estatísticos da PCoa
 ```
-![image](https://github.com/Tutugb/16S/assets/125391314/72d6caa6-4f79-4dc6-b79e-5ac52f5d7c6c)
+![image](https://github.com/Arturgbarros/16S/assets/125391314/16b50104-79ac-401e-be13-88b70db13acb)
 
 * LDA score
 ```R
@@ -172,7 +255,9 @@ t1 <- trans_diff$new(dataset = dataset, method = "lefse", group = "Group", alpha
 #t1 <- trans_diff$new(dataset = dataset, method = "lefse", group = "Group", alpha = 0.01, lefse_subgroup = NULL)#caso tenha valor p ajustado significativo
 t1$plot_diff_bar(threshold = 1.75)
 ```
-![image](https://github.com/Tutugb/16S/assets/125391314/1ddeca44-36b0-4398-aae5-f03e4c083408)
+![image](https://github.com/Arturgbarros/16S/assets/125391314/a84d31da-a61a-42b7-9f0c-9a20e9e72149)
+
+
 
 #### Network
 **Explicação:** Network serve para avaliar 
