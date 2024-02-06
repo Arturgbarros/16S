@@ -1,3 +1,5 @@
+![image](https://github.com/Arturgbarros/16S/assets/125391314/d6101494-16c8-4c8b-8313-884c9aab798a)
+
 # Workflow 16S por linha de comando
 O gene 16S rRNA é uma região altamente conservada entre espécies do DNA presente nas células de bactérias e archaea, e sua análise tem sido fundamental para a compreensão da diversidade microbiana. A sequência do 16S rRNA é amplamente utilizada como marcador molecular para identificação taxonômica e filogenética de bactérias e archaea, permitindo a caracterização de comunidades microbianas em diferentes ambientes. A heterogeneidade nessa região específica do genoma possibilita a discriminação entre diferentes espécies microbianas. O sequenciamento de amplicons do 16S rRNA, especialmente por meio de técnicas de próxima geração, revolucionou a pesquisa microbiológica, fornecendo insights precisos sobre a composição e estrutura das comunidades bacterianas e archaeais em diversos contextos, desde ambientes naturais até amostras clínicas.
 
